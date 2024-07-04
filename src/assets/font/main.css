@@ -1,0 +1,13 @@
+@import url('https://rsms.me/');
+@import url('https://rsms.me/inter/inter.css');
+
+@supports (font-variation-settings: normal) {
+    :root { font-family: InterVariable, sans-serif; }
+  }
+
+@font-face {
+    font-family: 'HarmonyOS Sans SC';
+    src: url('/src/assets/font/HarmonyOS_SansSC_Regular.ttf');
+    font-weight: normal;
+    font-style: normal;
+}
