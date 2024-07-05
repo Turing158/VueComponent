@@ -1,7 +1,16 @@
 <template>
     <div>
-        <div class="default" :style="{width:prop.width,height:prop.height}" @click="selectFile">
-            {{ prop.text }}
+        
+        <div v-if="prop.type == 'button'" class="btn upload" :class="prop.size == 'small' ? 'small' : prop.size == 'large' ? 'large' : '' " @click="selectFile">{{ prop.text=="+" ? '上传文件' : prop.text }}</div>
+        <div v-if="prop.type == 'button'" :style="{width:prop.width,height:prop.height}" v-show="selected && isPreview">
+          预览/Preview
+          <img class="preview border" :src="selected"/>
+        </div>
+        <div v-else class="default" :style="{width:prop.width,height:prop.height}" @click="selectFile">
+            <span v-show="!selected && isPreview">
+              {{ prop.text }}
+            </span>
+            <img class="preview" v-show="selected && isPreview" :src="selected"/>
         </div>
         <input ref="inputFile" class="hidden" type="file" hidden>
         <el-dialog title="裁剪头像" v-model="cropperPage" :close-on-click-modal="false" @close="cancle()">
@@ -18,8 +27,8 @@
           :autoCropWidth="option.autoCropWidth"
           :autoCropHeight="option.autoCropHeight"
           :fixedBox="option.fixedBox"
-          :fixed="option.fixed"
-          :fixedNumber="option.fixedNumber"
+          :fixed="!freeProp"
+          :fixedNumber="proportion.toString().split(',')"
           :canMove="option.canMove"
           :canMoveBox="option.canMoveBox"
           :original="option.original"
@@ -32,6 +41,16 @@
         >
         </VueCropper>
         <div class="operateClip">
+          <el-select v-show="needProp" v-model="proportion" @change="onSelectChange">
+            <el-option label="自由比例" value="0,0"></el-option>
+            <el-option label="1:1" value="1,1"></el-option>
+            <el-option label="1:2" value="2,1"></el-option>
+            <el-option label="4:3" value="4,3"></el-option>
+            <el-option label="16:9" value="16,9"></el-option>
+            <el-option label="2:1" value="1,2"></el-option>
+            <el-option label="3:4" value="3,4"></el-option>
+            <el-option label="9:16" value="9,16"></el-option>
+          </el-select>
           <div class="btn" @click="cropper.rotateRight()">顺时针旋转90°</div>
           <div class="btn" @click="cropper.rotateLeft()">逆时针旋转90°</div>
           <div class="btn" @click="onclip()">确定/Confirm</div>
@@ -43,7 +62,7 @@
 </template>
 <script setup>
 import { ElMessage } from 'element-plus';
-import { ref,reactive, onMounted } from 'vue';
+import { ref, onMounted } from 'vue';
 import 'vue-cropper/dist/index.css'
 import { VueCropper }  from "vue-cropper";
 const prop = defineProps({
@@ -58,8 +77,31 @@ const prop = defineProps({
     text: {
         type: String,
         default: "+"
+    },
+    proportion: {
+        type: String,
+        default: "1,1"
+    },
+    needProp: {
+        type: Boolean,
+        default: true
+    },
+    isPreview: {
+        type: Boolean,
+        default: true
+    },
+    type: {
+        type: String,
+        default: "default"
+    },
+    size:{
+        type: String,
+        default: "default"
     }
 })
+const permitSelectProp = ref(prop.needProp)
+const freeProp = ref(prop.needProp)
+const proportion = ref(prop.proportion)
 const inputFile = ref(null);
 const selectFile = () => {
     inputFile.value.click();
@@ -71,13 +113,12 @@ const confirmFile = async () => {
   if (selected.value == '') {
     ElMessage.error('请先选择图片')
   } else {
-    ElMessage.info("上传")
+    ElMessage.info("剪裁完成")
     console.log(selected.value);
   }
   inputFile.value.value = ''
-  selected.value = ''
 }
-const option = reactive({
+const option = ref({
   outputSize: 1,
   outputType: 'png',
   info: true,
@@ -86,8 +127,6 @@ const option = reactive({
   autoCropWidth: 100,
   autoCropHeight: 100,
   fixedBox: false,
-  fixed: true,
-  fixedNumber: [1, 1],
   canMove: true,
   canMoveBox: true,
   original: false,
@@ -97,6 +136,16 @@ const option = reactive({
   enlarge: '1',
   mode: 'contain'
 })
+const onSelectChange = (e)=>{
+  if(permitSelectProp.value){
+    if(e == '0,0'){
+      freeProp.value = true
+    }
+    else{
+      freeProp.value = false
+    }
+  }
+}
 const preview = ref('')
 const realTime = (data) => {
   preview.value = data
@@ -145,6 +194,9 @@ const initInput = ()=>{
 onMounted(initInput)
 </script>
 <style scoped>
+*{
+  user-select: none;
+}
 .hidden{
     display: none;
 }
@@ -158,8 +210,21 @@ onMounted(initInput)
     color: #0a4f88;
     cursor: pointer;
 }
-
-
+.upload{
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+.small{
+    width: 80px !important;
+    height: 30px !important;
+    font-size: 15px;
+}
+.large{
+    width: 120px !important;
+    height: 50px !important;
+    font-size: 20px;
+}
 .cropperDiv{
   height: 60vh;
   display: flex;
@@ -192,5 +257,14 @@ onMounted(initInput)
 .btn:hover{
   background-color: #0a4f88;
   color: white;
+}
+.preview{
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    border-radius: 10px;
+}
+.border{
+    border: 2px solid #0a4f88;
 }
 </style>
